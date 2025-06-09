@@ -1,11 +1,11 @@
 #include "grafo.h"
 #include <iostream>
+#include <fstream>
 #include <map>
-#include <vector>
-#include <string>
 #include <queue>
+#include <string>
+#include <utility>
 using namespace std;
-
 
 Grafo::Grafo(const string& nomeArquivo) {
     ifstream arquivo(nomeArquivo);
@@ -17,32 +17,29 @@ Grafo::Grafo(const string& nomeArquivo) {
     arquivo >> n >> m;
 
     map<string, int> nomeParaIndice;
-    vector<string> vertices;
-    int proximoIndice = 0;
+    indiceParaNome.resize(n);
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < n; ++i) {
         string nome;
         arquivo >> nome;
-        if (nomeParaIndice.find(nome) == nomeParaIndice.end()) {
-            nomeParaIndice[nome] = proximoIndice++;
-            vertices.push_back(nome);
-        }
+        nomeParaIndice[nome] = i;
+        indiceParaNome[i] = nome;
     }
 
     matrizAdj.resize(n, vector<int>(n, 0));
 
-    for (int i = 0; i < m; i++) {
+    for (int i = 0; i < m; ++i) {
         string nome1, nome2;
         arquivo >> nome1 >> nome2;
 
-        int idx1 = nomeParaIndice[nome1];
-        int idx2 = nomeParaIndice[nome2];
-
-        if (idx1 == -1 || idx2 == -1) {
-            cout << "Warning: Ignorando aresta inválida entre vértices " 
-                 << nome1 << " e " << nome2 << endl;
+        if (nomeParaIndice.find(nome1) == nomeParaIndice.end() ||
+            nomeParaIndice.find(nome2) == nomeParaIndice.end()) {
+            cout << "Atencao: vertice nao reconhecido na aresta " << nome1 << " - " << nome2 << endl;
             continue;
         }
+
+        int idx1 = nomeParaIndice[nome1];
+        int idx2 = nomeParaIndice[nome2];
 
         matrizAdj[idx1][idx2]++;
         matrizAdj[idx2][idx1]++;
@@ -52,7 +49,7 @@ Grafo::Grafo(const string& nomeArquivo) {
 }
 
 void Grafo::imprimirMatriz() const {
-    cout << "\nMatriz de Adjacência:" << endl;
+    cout << "\nMatriz de Adjacencia:\n";
     for (const auto& linha : matrizAdj) {
         for (int val : linha) {
             cout << val << " ";
@@ -62,24 +59,24 @@ void Grafo::imprimirMatriz() const {
 }
 
 void Grafo::imprimirArestas() const {
-    cout << "\nLista de Arestas:" << endl;
+    cout << "\nLista de Arestas:\n";
     for (int i = 0; i < n; i++) {
-        for (int j = i + 1; j < n; j++) {  
+        for (int j = i + 1; j < n; j++) {
             for (int k = 0; k < matrizAdj[i][j]; k++) {
-                cout << i << " - " << j << endl;
+                cout << indiceParaNome[i] << " - " << indiceParaNome[j] << endl;
             }
         }
     }
 }
 
 void Grafo::calcularGraus() const {
-    cout << "\nGrau de cada vértice:" << endl;
+    cout << "\nGrau de cada vertice:\n";
     for (int i = 0; i < n; i++) {
         int grau = 0;
         for (int j = 0; j < n; j++) {
             grau += matrizAdj[i][j];
         }
-        cout << "Vertice " << i << ": grau " << grau << endl;
+        cout << "Vertice " << indiceParaNome[i] << ": grau " << grau << endl;
     }
 }
 
@@ -87,7 +84,6 @@ bool Grafo::ehSimples() const {
     for (int i = 0; i < n; i++) {
         if (matrizAdj[i][i] != 0) return false;
     }
-
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
             if (i != j && matrizAdj[i][j] > 1) return false;
@@ -125,14 +121,8 @@ bool Grafo::ehConexo() const {
     vector<bool> visitado(n, false);
     queue<int> fila;
 
-    int primeiroVertice = 0;
-    while (primeiroVertice < n && matrizAdj[primeiroVertice].empty()) {
-        primeiroVertice++;
-        if (primeiroVertice >= n) return false;
-    }
-
-    fila.push(primeiroVertice);
-    visitado[primeiroVertice] = true;
+    fila.push(0);
+    visitado[0] = true;
 
     while (!fila.empty()) {
         int v = fila.front();
@@ -156,36 +146,36 @@ void Grafo::densoOuEsparso() const {
     int maxArestas = n * (n - 1) / 2;
     double densidade = (double)m / maxArestas;
 
-    cout << "\nAnálise de Densidade:" << endl;
-    cout << "Densidade: " << (densidade * 100) << "%" << endl;
+    cout << "\nAnalise de Densidade:\n";
+    cout << "Densidade: " << (densidade * 100) << "%\n";
     if (densidade > 0.5) {
-        cout << "O grafo é DENSO." << endl;
+        cout << "O grafo eh DENSO.\n";
     } else {
-        cout << "O grafo é ESPARSO." << endl;
+        cout << "O grafo eh ESPARSO.\n";
     }
 }
 
 void Grafo::propriedades() const {
-    cout << "\nPropriedades do Grafo:" << endl;
+    cout << "\nPropriedades do Grafo:\n";
 
     if (ehSimples()) {
-        cout << "- É um grafo simples" << endl;
+        cout << "- Eh um grafo simples\n";
     } else if (ehPseudografo()) {
-        cout << "- É um pseudografo" << endl;
+        cout << "- Eh um pseudografo\n";
     } else if (ehMultigrafo()) {
-        cout << "- É um multigrafo" << endl;
+        cout << "- Eh um multigrafo\n";
     }
 
     if (ehCompleto()) {
-        cout << "- É um grafo completo" << endl;
+        cout << "- Eh um grafo completo\n";
     } else {
-        cout << "- Não é um grafo completo" << endl;
+        cout << "- Nao eh um grafo completo\n";
     }
 
     if (ehConexo()) {
-        cout << "- É um grafo conexo" << endl;
+        cout << "- Eh um grafo conexo\n";
     } else {
-        cout << "- É um grafo desconexo" << endl;
+        cout << "- Eh um grafo desconexo\n";
     }
 
     densoOuEsparso();
